@@ -6,6 +6,8 @@ import 'dart:async';
 import 'dart:math';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:connectivity/connectivity.dart';
+import 'package:data_connection_checker/data_connection_checker.dart';
 
 final uuid = Uuid();
 
@@ -85,19 +87,6 @@ Future<bool> check_folder_empty(folder) async {
   return files.isEmpty;
 }
 
-Future<bool> is_connected() async {
-  print('starting check connect');
-  return await Future<String>.delayed(
-    Duration(milliseconds: 100),
-    () {
-      return 'finished check connect';
-    },
-  ).then((value) {
-    print(value);
-    return false;
-  });
-}
-
 Future<List> get_file_list(folder) async {
   print('starting get file list');
   return await Future<String>.delayed(
@@ -134,4 +123,7 @@ Future<void> upload_delete(url, filename, folder) async {
   }
 }
 
-Future<void> create_filename(filename, folder) async {}
+Future<bool> is_Connected() async {
+  bool result = await DataConnectionChecker().hasConnection;
+  return result;
+}
