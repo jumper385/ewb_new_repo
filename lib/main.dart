@@ -47,7 +47,7 @@ class _MainStructureState extends State<MainStructure> {
   double x, y, z = 0;
   List<double> accelValues;
   Location location = new Location();
-  var latlong;
+  List<double> latlong;
   String filename;
 
   //Main Threads

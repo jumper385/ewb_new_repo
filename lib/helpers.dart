@@ -1,15 +1,17 @@
 library helpers;
 
 import 'package:location/location.dart';
+import 'dart:io';
 import 'dart:async';
 import 'dart:math';
 import 'package:uuid/uuid.dart';
-import 'package:path_provider/  .dart';
+import 'package:path_provider/path_provider.dart';
 
 final uuid = Uuid();
 
 Future<List> getGPS(gpsObject) async {
   var newLocation = await gpsObject.getLocation();
+  print(newLocation);
   return [newLocation.latitude, newLocation.longitude];
 }
 
