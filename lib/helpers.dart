@@ -26,17 +26,18 @@ String generate_filename() {
   return getRandomString(5);
 }
 
-Future<String> write_file(data_array, data_type, filename, vehicleId) async {
+Future<String> write_file(
+    data_array, data_type, filename, folder, vehicleId) async {
   final Directory directory = await getApplicationDocumentsDirectory();
-
-  var new_file = '${directory.path}/${filename}.txt';
+  var new_file = '${directory.path}/${folder}/${filename}.txt';
   final File file = await File(new_file).create(recursive: true);
+  print(file);
+
   final data = await file.readAsString();
   final sink = file.openWrite();
   sink.write(data +
       "$vehicleId, ${uuid.v4()}, ${DateTime.now()}, $data_type, ${data_array.join(",")}\n\r");
   sink.close();
-
   return await file.readAsString();
 }
 
@@ -46,19 +47,34 @@ Future<bool> movement_detection(filename, folder, distance_threshold) async {
 
 Future<void> move_file(filename, folder_from, folder_to) async {
   final Directory directory = await getApplicationDocumentsDirectory();
-
   File file = File(
-      '${directory.path}/$folder_from/$filename'); //gone to file and aquired it
-  await file.rename(
-      '${directory.path}/$folder_to/$filename'); //moving file to where it needs to go
+      '${directory.path}/${folder_from}/${filename}.txt'); //gone to file and aquired it
+  if (await File(file.path).exists()) {
+    if (await Directory("${directory.path}/${folder_to}").exists()) {
+      await file.rename(
+          '${directory.path}/${folder_to}/$filename.txt'); //moving file to where it needs to go
+    } else {
+      final Directory folder_to_dir =
+          await Directory("${directory.path}/${folder_to}")
+              .create(recursive: true);
+      await file.rename(
+          '${folder_to_dir.path}/$filename.txt'); //moving file to where it needs to go
+    }
+  }
   return;
 }
 
 Future<void> delete_file(filename, folder) async {
   final Directory directory = await getApplicationDocumentsDirectory();
 
-  File file = File('${directory.path}/${folder}/${filename}');
-  await file.delete();
+  final Directory folder_dir =
+      await Directory('${directory.path}/${folder}').create(recursive: true);
+
+  File file = File('${folder_dir.path}/${filename}.txt');
+
+  if (await File(file.path).exists()) {
+    await file.delete();
+  }
   return;
 }
 
@@ -78,7 +94,7 @@ Future<bool> is_connected() async {
     },
   ).then((value) {
     print(value);
-    return true;
+    return false;
   });
 }
 
@@ -117,3 +133,5 @@ Future<void> upload_delete(url, filename, folder) async {
     print("upload_delete failed");
   }
 }
+
+Future<void> create_filename(filename, folder) async {}

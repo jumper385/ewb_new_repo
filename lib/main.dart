@@ -9,10 +9,10 @@ import 'helpers.dart';
 final accel_delay = Duration(seconds: 3);
 final gps_delay = Duration(seconds: 10);
 final thread2_delay = Duration(seconds: 20);
-final thread3_delay = Duration(seconds: 5);
+final thread3_delay = Duration(seconds: 50);
 final String vehicleID = 'this vehicle';
-final String upload = "root/upload";
-final String compile = "root/compile";
+final String upload = "upload";
+final String compile = "compile";
 final double distance_threshold = 10.0;
 final String databaseurl = "http://gayhenry";
 
@@ -47,7 +47,7 @@ class _MainStructureState extends State<MainStructure> {
   double x, y, z = 0;
   List<double> accelValues;
   Location location = new Location();
-  List<double> latlong;
+  var latlong;
   String filename;
 
   //Main Threads
@@ -55,7 +55,7 @@ class _MainStructureState extends State<MainStructure> {
     setState(() {
       accelValues = [x, y, z];
     });
-    write_file(accelValues, 'accel', filename, compile);
+    write_file(accelValues, 'accel', filename, compile, vehicleID);
   }
 
   Future<void> gpsData() async {
@@ -63,28 +63,34 @@ class _MainStructureState extends State<MainStructure> {
       setState(() {
         latlong = value;
       });
-      write_file(latlong, 'gps', filename, compile);
+      write_file(latlong, 'gps', filename, compile, vehicleID);
     });
   }
 
   Future<void> thread2() async {
-    String last_filename = filename;
-    filename = generate_filename();
-    if (await movement_detection(last_filename, compile, distance_threshold)) {
-      move_file(last_filename, compile, upload);
-    } else {
-      delete_file(last_filename, upload);
-    }
-  }
-
-  Future<void> thread3() async {
-    if (!await check_folder_empty(upload)) {
-      if (await is_connected()) {
-        List file_list = await get_file_list(upload);
-        file_list.forEach((e) => {upload_delete(databaseurl, e, upload)});
+    if (!await check_folder_empty(compile)) {
+      String last_filename = filename;
+      filename = generate_filename();
+      if (await movement_detection(
+          last_filename, compile, distance_threshold)) {
+        move_file(last_filename, compile, upload);
+        print('move_complete');
+      } else {
+        delete_file(last_filename, compile);
+        print("delete complete");
       }
     }
   }
+
+  // Future<void> thread3() async {
+  //   if (!await check_folder_empty(upload)) {
+  //     print('checked!');
+  //     if (await is_connected()) {
+  //       List file_list = await get_file_list(upload);
+  //       file_list.forEach((e) => {upload_delete(databaseurl, e, upload)});
+  //     }
+  //   }
+  // }
 
   //Initialization
   @override
@@ -117,7 +123,7 @@ class _MainStructureState extends State<MainStructure> {
 
     Timer.periodic(thread3_delay, (Timer thread3Timer) {
       print("hello world 4");
-      thread3();
+      // thread3();
     });
   }
 
