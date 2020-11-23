@@ -3,6 +3,10 @@ library helpers;
 import 'package:location/location.dart';
 import 'dart:async';
 import 'dart:math';
+import 'package:uuid/uuid.dart';
+import 'package:path_provider/  .dart';
+
+final uuid = Uuid();
 
 Future<List> getGPS(gpsObject) async {
   var newLocation = await gpsObject.getLocation();
@@ -20,17 +24,18 @@ String generate_filename() {
   return getRandomString(5);
 }
 
-Future<void> write_file(array, data_type, filename, compile) async {
-  //PLACEHOLDER
-  print('starting write');
-  await Future<String>.delayed(
-    Duration(milliseconds: 100),
-    () {
-      return 'finished write';
-    },
-  ).then((value) {
-    print(value);
-  });
+Future<String> write_file(data_array, data_type, filename, vehicleId) async {
+  final Directory directory = await getApplicationDocumentsDirectory();
+
+  var new_file = '${directory.path}/${filename}.txt';
+  final File file = await File(new_file).create(recursive: true);
+  final data = await file.readAsString();
+  final sink = file.openWrite();
+  sink.write(data +
+      "$vehicleId, ${uuid.v4()}, ${DateTime.now()}, $data_type, ${data_array.join(",")}\n\r");
+  sink.close();
+
+  return await file.readAsString();
 }
 
 Future<bool> movement_detection(filename, folder, distance_threshold) async {
@@ -38,40 +43,28 @@ Future<bool> movement_detection(filename, folder, distance_threshold) async {
 }
 
 Future<void> move_file(filename, folder_from, folder_to) async {
-  print('starting write move file');
-  await Future<String>.delayed(
-    Duration(milliseconds: 100),
-    () {
-      return 'finished write move file';
-    },
-  ).then((value) {
-    print(value);
-  });
+  final Directory directory = await getApplicationDocumentsDirectory();
+
+  File file = File(
+      '${directory.path}/$folder_from/$filename'); //gone to file and aquired it
+  await file.rename(
+      '${directory.path}/$folder_to/$filename'); //moving file to where it needs to go
+  return;
 }
 
 Future<void> delete_file(filename, folder) async {
-  print('starting write delete file');
-  await Future<String>.delayed(
-    Duration(milliseconds: 100),
-    () {
-      return 'finished write delete file';
-    },
-  ).then((value) {
-    print(value);
-  });
+  final Directory directory = await getApplicationDocumentsDirectory();
+
+  File file = File('${directory.path}/${folder}/${filename}');
+  await file.delete();
+  return;
 }
 
 Future<bool> check_folder_empty(folder) async {
-  print('starting check empty file');
-  return await Future<String>.delayed(
-    Duration(milliseconds: 100),
-    () {
-      return 'finished check empty file';
-    },
-  ).then((value) {
-    print(value);
-    return false;
-  });
+  final Directory directory = await getApplicationDocumentsDirectory();
+  Directory dir = Directory('${directory.path}/${folder}');
+  List files = dir.listSync();
+  return files.isEmpty;
 }
 
 Future<bool> is_connected() async {
