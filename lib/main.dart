@@ -5,16 +5,20 @@ import 'package:location/location.dart';
 import 'dart:async';
 import 'dart:math';
 import 'helpers.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 
 final accel_delay = Duration(seconds: 3);
-final gps_delay = Duration(seconds: 10);
-final thread2_delay = Duration(seconds: 20);
-final thread3_delay = Duration(seconds: 50);
-final String vehicleID = 'this vehicle';
+final gps_delay = Duration(seconds: 3);
+final thread2_delay = Duration(seconds: 10);
+final thread3_delay = Duration(seconds: 15);
+final thread4_delay = Duration(seconds: 20);
+final String vehicleID = 'this is vehicle 1';
 final String upload = "upload";
+final String stagging = "stagging";
 final String compile = "compile";
 final double distance_threshold = 10.0;
-final String databaseurl = "http://gayhenry";
+final String databaseurl = "http://10.1.1.229:3000/apiv1";
 
 void main() => runApp(MyApp());
 
@@ -24,7 +28,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: Colors.green[200],
         appBar: AppBar(
           backgroundColor: Colors.green[300],
           title: Text('EWB APPtech'),
@@ -49,6 +52,7 @@ class _MainStructureState extends State<MainStructure> {
   Location location = new Location();
   var latlong;
   String filename;
+  bool connected = false;
 
   //Main Threads
   Future<void> accelData() async {
@@ -69,28 +73,53 @@ class _MainStructureState extends State<MainStructure> {
 
   Future<void> thread2() async {
     if (!await check_folder_empty(compile)) {
-      String last_filename = filename;
-      filename = generate_filename();
-      if (await movement_detection(
-          last_filename, compile, distance_threshold)) {
-        move_file(last_filename, compile, upload);
-        print('move_complete');
-      } else {
-        delete_file(last_filename, compile);
-        print("delete complete");
-      }
+      setState(() {
+        filename = generate_filename();
+      });
+
+      final Directory directory = await getExternalStorageDirectory();
+      Directory compileDir = Directory('${directory.path}/$compile');
+      print(compileDir);
+      compileDir.list(recursive: true, followLinks: false).listen((e) {
+        String name = e.path.split('/').last.split('.')[0];
+        if (name != filename) {
+          move_file(name, compile, stagging);
+          print('moved file to stagging');
+        }
+      });
     }
   }
 
-  // Future<void> thread3() async {
-  //   if (!await check_folder_empty(upload)) {
-  //     print('checked!');
-  //     if (await is_connected()) {
-  //       List file_list = await get_file_list(upload);
-  //       file_list.forEach((e) => {upload_delete(databaseurl, e, upload)});
-  //     }
-  //   }
-  // }
+  Future<void> thread3() async {
+    final Directory directory = await getExternalStorageDirectory();
+    Directory staggingDir = Directory('${directory.path}/$stagging');
+
+    staggingDir.list(recursive: true, followLinks: false).listen((e) async {
+      String name = e.path.split('/').last.split('.')[0];
+      if (await movement_detection(name, stagging, distance_threshold)) {
+        move_file(name, stagging, upload);
+        print('move_stagging');
+      } else {
+        delete_file(name, stagging);
+        print("delete_stagging");
+      }
+    });
+  }
+
+  Future<void> thread4() async {
+    if (!await check_folder_empty(upload)) {
+      print('checked!');
+      if (await is_connected()) {
+        final Directory directory = await getExternalStorageDirectory();
+        Directory uploadDir = Directory('${directory.path}/$upload');
+
+        uploadDir.list(recursive: true, followLinks: false).listen((e) async {
+          String name = e.path.split('/').last.split('.')[0];
+          upload_delete(databaseurl, name, upload);
+        });
+      }
+    }
+  }
 
   //Initialization
   @override
@@ -123,7 +152,19 @@ class _MainStructureState extends State<MainStructure> {
 
     Timer.periodic(thread3_delay, (Timer thread3Timer) {
       print("hello world 4");
-      // thread3();
+      thread3();
+    });
+
+    Timer.periodic(thread4_delay, (Timer thread3Timer) {
+      print("hello world 5");
+      thread4();
+    });
+
+    Timer.periodic(Duration(milliseconds: 250), (timer) async {
+      bool conn = await is_connected();
+      setState(() {
+        connected = conn != null ? conn : false;
+      });
     });
   }
 
@@ -135,6 +176,9 @@ class _MainStructureState extends State<MainStructure> {
         padding: const EdgeInsets.all(32),
         child: Column(
           children: [
+            Text(connected
+                ? '🟢 Connected to Internet 😌'
+                : '🟠 Currently Offline 😴'),
             Align(
               alignment: Alignment.center,
               child: Text(
