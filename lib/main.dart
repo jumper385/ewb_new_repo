@@ -53,7 +53,7 @@ class _MainStructureState extends State<MainStructure> {
   Location location = new Location();
   var latlong;
   String filename;
-  bool connected = false;
+  bool connected_server = false;
 
   //Main Threads
   Future<void> accelData() async {
@@ -99,7 +99,7 @@ class _MainStructureState extends State<MainStructure> {
       String name = e.path.split('/').last.split('.')[0];
       if (await movement_detection(name, stagging, distance_threshold)) {
         move_file(name, stagging, upload);
-        print('move_stagging');
+        // print('move_stagging');
       } else {
         delete_file(name, stagging);
         print("delete_stagging");
@@ -140,34 +140,29 @@ class _MainStructureState extends State<MainStructure> {
     });
 
     Timer.periodic(accel_delay, (Timer accelTimer) {
-      print("Hello world");
       accelData();
     });
 
     Timer.periodic(gps_delay, (Timer gpsTimer) {
-      print("hello world 2");
       gpsData();
     });
 
     Timer.periodic(thread2_delay, (Timer thread2Timer) {
-      print("hello world 3");
       thread2();
     });
 
     Timer.periodic(thread3_delay, (Timer thread3Timer) {
-      print("hello world 4");
       thread3();
     });
 
     Timer.periodic(thread4_delay, (Timer thread3Timer) {
-      print("hello world 5");
       thread4();
     });
 
     Timer.periodic(Duration(milliseconds: 250), (timer) async {
-      bool conn = await is_connected();
+      bool conn_server = await ping_server(databaseurl);
       setState(() {
-        connected = conn != null ? conn : false;
+        connected_server = conn_server != null ? conn_server : false;
       });
     });
   }
@@ -180,9 +175,9 @@ class _MainStructureState extends State<MainStructure> {
         padding: const EdgeInsets.all(32),
         child: Column(
           children: [
-            Text(connected
-                ? '🟢 Connected to Internet 😌'
-                : '🟠 Currently Offline 😴'),
+            Text(connected_server
+                ? '🟢 Connected to Server 😌'
+                : '🟠 Not Connected to Server 😴'),
             Align(
               alignment: Alignment.center,
               child: Text(
@@ -238,16 +233,6 @@ class _MainStructureState extends State<MainStructure> {
                 Text(latlong != null
                     ? "longitude: " + latlong[1].toString()
                     : 'nothing...'),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 0),
-                  child: FloatingActionButton.extended(
-                    onPressed: () {
-                      ping_button(databaseurl, "vehicle 500");
-                    },
-                    label: Text('Ping Server'),
-                    backgroundColor: Colors.green,
-                  ),
-                ),
               ],
             )
           ],

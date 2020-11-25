@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:geolocator/geolocator.dart';
 
 final uuid = Uuid();
 
@@ -24,7 +25,6 @@ Future<String> write_file(
   final Directory directory = await getExternalStorageDirectory();
   var new_file = '${directory.path}/${folder}/${filename}.txt';
   final File file = await File(new_file).create(recursive: true);
-  print(data_array);
 
   final data = await file.readAsString();
   final sink = file.openWrite();
@@ -81,19 +81,6 @@ Future<bool> check_folder_empty(folder) async {
   return files.isEmpty;
 }
 
-Future<List> get_file_list(folder) async {
-  print('starting get file list');
-  return await Future<String>.delayed(
-    Duration(milliseconds: 100),
-    () {
-      return 'finished get file list';
-    },
-  ).then((value) {
-    print(value);
-    return ['file1', 'file2'];
-  });
-}
-
 Future<bool> movement_detection(filename, folder, distance_threshold) async {
   // final Directory directory = await getExternalStorageDirectory();
   // var file =
@@ -107,7 +94,7 @@ Future<bool> movement_detection(filename, folder, distance_threshold) async {
   // print(gpsLines);
 
   // List initial = gpsLines[0]
-  //       .split(","); // split the two values of each line where split by a comma
+  //     .split(","); // split the two values of each line where split by a comma
   // double lat1 = double.tryParse(initial[4]); //get latitude
   // double lon1 = double.tryParse(initial[5]); //get longitude
   // print('initial value');
