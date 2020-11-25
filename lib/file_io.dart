@@ -1,23 +1,12 @@
-library helpers;
+library file_io;
 
-import 'package:location/location.dart';
 import 'dart:io';
 import 'dart:async';
 import 'dart:math';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:connectivity/connectivity.dart';
-import 'package:data_connection_checker/data_connection_checker.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:http/http.dart' as http;
 
 final uuid = Uuid();
-
-Future<List> getGPS(gpsObject) async {
-  var newLocation = await gpsObject.getLocation();
-  print(newLocation);
-  return [newLocation.latitude, newLocation.longitude];
-}
 
 //Helper Helper function that I got from the internet: https://stackoverflow.com/questions/61919395/how-to-generate-random-string-in-dart
 const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
@@ -103,38 +92,6 @@ Future<List> get_file_list(folder) async {
     print(value);
     return ['file1', 'file2'];
   });
-}
-
-Future<int> upload_file(url, fileToUpload, folder) async {
-  print('sending to $url');
-  var data = await readFile('$fileToUpload.txt', folder);
-  var response = await http
-      .post(url, body: {'payload': '$data', 'filename': '$fileToUpload.txt'});
-  print(response.statusCode);
-  return response.statusCode;
-}
-
-Future<void> upload_delete(url, filename, folder) async {
-  try {
-    upload_file(url, filename, folder).then((e) {
-      print("response ${e.toString()}");
-      if (e == 200) {
-        delete_file(filename, folder);
-      } else {
-        print("upload error!!!!!!!!!");
-      }
-    });
-  } catch (err) {
-    print("upload_delete failed");
-  }
-}
-
-Future<bool> is_connected() async {
-  var connectivtyResult = await Connectivity().checkConnectivity();
-  print(connectivtyResult != ConnectivityResult.none
-      ? "CONNECTED"
-      : "NOT CONNECTED");
-  return connectivtyResult != ConnectivityResult.none ? true : false;
 }
 
 Future<bool> movement_detection(filename, folder, distance_threshold) async {

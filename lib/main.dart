@@ -3,8 +3,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:sensors/sensors.dart';
 import 'package:location/location.dart';
 import 'dart:async';
-import 'dart:math';
-import 'helpers.dart';
+import 'file_io.dart';
+import 'sensor.dart';
+import 'web.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
@@ -18,7 +19,7 @@ final String upload = "upload";
 final String stagging = "stagging";
 final String compile = "compile";
 final double distance_threshold = 10.0;
-final String databaseurl = "http://10.1.1.229:3000/apiv1";
+final String databaseurl = "http://172.20.10.2:80/apiv1";
 
 void main() => runApp(MyApp());
 
@@ -110,13 +111,16 @@ class _MainStructureState extends State<MainStructure> {
     if (!await check_folder_empty(upload)) {
       print('checked!');
       if (await is_connected()) {
-        final Directory directory = await getExternalStorageDirectory();
-        Directory uploadDir = Directory('${directory.path}/$upload');
+        if (await ping_server(databaseurl)) {
+          print("uploading to server");
+          final Directory directory = await getExternalStorageDirectory();
+          Directory uploadDir = Directory('${directory.path}/$upload');
 
-        uploadDir.list(recursive: true, followLinks: false).listen((e) async {
-          String name = e.path.split('/').last.split('.')[0];
-          upload_delete(databaseurl, name, upload);
-        });
+          uploadDir.list(recursive: true, followLinks: false).listen((e) async {
+            String name = e.path.split('/').last.split('.')[0];
+            upload_delete(databaseurl, name, upload);
+          });
+        }
       }
     }
   }
@@ -234,6 +238,16 @@ class _MainStructureState extends State<MainStructure> {
                 Text(latlong != null
                     ? "longitude: " + latlong[1].toString()
                     : 'nothing...'),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 0),
+                  child: FloatingActionButton.extended(
+                    onPressed: () {
+                      ping_button(databaseurl, "vehicle 500");
+                    },
+                    label: Text('Ping Server'),
+                    backgroundColor: Colors.green,
+                  ),
+                ),
               ],
             )
           ],
