@@ -9,16 +9,12 @@ import 'package:http/http.dart' as http;
 final uuid = Uuid();
 
 Future<int> upload_file(url, fileToUpload, folder) async {
-  try {
-    var data = await readFile('$fileToUpload.txt', folder);
-    var response = await http
-        .post(url, body: {'payload': '$data', 'filename': '$fileToUpload.txt'});
-    print(response.statusCode);
-    return response.statusCode;
-  } catch (err) {
-    print("UPLOAD FAILED");
-    return 500;
-  }
+  print('sending to $url');
+  var data = await readFile('$fileToUpload.txt', folder);
+  var response = await http
+      .post(url, body: {'payload': '$data', 'filename': '$fileToUpload.txt'});
+  print(response.statusCode);
+  return response.statusCode;
 }
 
 Future<void> upload_delete(url, filename, folder) async {
@@ -32,27 +28,39 @@ Future<void> upload_delete(url, filename, folder) async {
       }
     });
   } catch (err) {
-    print("UPLOAD_DELETE FAILED");
+    print("upload_delete failed");
   }
 }
 
 Future<bool> is_connected() async {
   var connectivtyResult = await Connectivity().checkConnectivity();
+  // print(connectivtyResult != ConnectivityResult.none
+  //     ? "CONNECTED"
+  //     : "NOT CONNECTED");
   return connectivtyResult != ConnectivityResult.none ? true : false;
 }
 
 Future<bool> ping_server(url) async {
-  try {
+  try{
+    print('pinging $url/ping');
     var response = await http.get(url);
+    print(response.statusCode);
     if (response.statusCode == 200) {
-      // print("succeed to ping server");
+      print("succeed to ping server");
       return true;
     } else {
-      // print("failed to ping server");
+      print("failed to ping server");
       return false;
     }
-  } catch (err) {
-    print("PING SERVER FAILED");
+  } catch (err){
+    print("ping_server() failed");
     return false;
   }
+}
+
+Future<int> ping_button(url, string) async {
+  print('SERVER PING BUTTTON PRESSED');
+  var response = await http.post(url, body: {'payload': '$string'});
+  print(response.statusCode);
+  return response.statusCode;
 }
