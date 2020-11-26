@@ -12,14 +12,14 @@ import 'package:path_provider/path_provider.dart';
 final accel_delay = Duration(seconds: 3);
 final gps_delay = Duration(seconds: 3);
 final thread2_delay = Duration(seconds: 10);
-final thread3_delay = Duration(seconds: 15);
+final thread3_delay = Duration(seconds: 25);
 final thread4_delay = Duration(seconds: 20);
-final String vehicleID = 'this is vehicle 1';
+final String vehicleID = 'vechicle carmen';
 final String upload = "upload";
 final String stagging = "stagging";
 final String compile = "compile";
 final double distance_threshold = 10.0;
-final String databaseurl = "http://172.20.10.2:80/apiv1";
+final String databaseurl = "http://digism.xyz:8081/apiv1";
 
 void main() => runApp(MyApp());
 
@@ -99,7 +99,7 @@ class _MainStructureState extends State<MainStructure> {
       String name = e.path.split('/').last.split('.')[0];
       if (await movement_detection(name, stagging, distance_threshold)) {
         move_file(name, stagging, upload);
-        // print('move_stagging');
+        print('moved file from stagging to upload ');
       } else {
         delete_file(name, stagging);
         print("delete_stagging");
@@ -159,7 +159,7 @@ class _MainStructureState extends State<MainStructure> {
       thread4();
     });
 
-    Timer.periodic(Duration(milliseconds: 250), (timer) async {
+    Timer.periodic(Duration(milliseconds: 3000), (timer) async {
       bool conn_server = await ping_server(databaseurl);
       setState(() {
         connected_server = conn_server != null ? conn_server : false;
