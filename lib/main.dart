@@ -12,6 +12,7 @@ import 'sensor.dart';
 import 'web.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:background_fetch/background_fetch.dart';
 import 'package:uuid/uuid.dart';
 
 var uuid = Uuid();
@@ -29,6 +30,12 @@ final String compile = "compile";
 final String savedID = "savedID";
 final double distance_threshold = 10.0;
 final String databaseurl = "http://digism.xyz:8081/apiv1";
+
+/// This "Headless Task" is run when app is terminated.
+void backgroundFetchHeadlessTask(String taskId) async {
+  print('[BackgroundFetch] Headless event received.');
+  BackgroundFetch.finish(taskId);
+}
 
 void main() => runApp(MyApp());
 
@@ -55,6 +62,8 @@ class MainStructure extends StatefulWidget {
   _MainStructureState createState() => _MainStructureState();
 }
 
+
+
 class _MainStructureState extends State<MainStructure> {
   //State Variables
   double x, y, z = 0;
@@ -63,8 +72,10 @@ class _MainStructureState extends State<MainStructure> {
   var latlong;
   String filename;
   bool connected_server = false;
+  bool _enabled = true;
+  int _status = 0;
+  List<DateTime> _events = [];
   int batLevel;
-
   final myController = TextEditingController();
 
   @override
@@ -73,6 +84,7 @@ class _MainStructureState extends State<MainStructure> {
     myController.dispose();
     super.dispose();
   }
+
 
   //Main Threads
   Future<void> accelData() async {
@@ -153,6 +165,50 @@ class _MainStructureState extends State<MainStructure> {
       }
     }
   }
+  
+  Future<void> initPlatformState() async {
+    // Configure BackgroundFetch.
+    BackgroundFetch.configure(BackgroundFetchConfig(
+        minimumFetchInterval: 15,
+        stopOnTerminate: false,
+        enableHeadless: false,
+        requiresBatteryNotLow: false,
+        requiresCharging: false,
+        requiresStorageNotLow: false,
+        requiresDeviceIdle: false,
+        requiredNetworkType: NetworkType.NONE
+    ), (String taskId) async {
+      // This is the fetch-event callback.
+      print("[BackgroundFetch] Event received $taskId");
+      setState(() {
+        _events.insert(0, new DateTime.now());
+      });
+      // IMPORTANT:  You must signal completion of your task or the OS can punish your app
+      // for taking too long in the background.
+      BackgroundFetch.finish(taskId);
+    }).then((int status) {
+      print('[BackgroundFetch] configure success: $status');
+      setState(() {
+        _status = status;
+      });
+    }).catchError((e) {
+      print('[BackgroundFetch] configure ERROR: $e');
+      setState(() {
+        _status = e;
+      });
+    });
+
+    // Optionally query the current BackgroundFetch status.
+    int status = await BackgroundFetch.status;
+    setState(() {
+      _status = status;
+    });
+
+    // If the widget was removed from the tree while the asynchronous platform
+    // message was in flight, we want to discard the reply rather than calling
+    // setState to update our non-existent appearance.
+    if (!mounted) return;
+  }
 
   Future<void> sort_ID(string) async {
     try {
@@ -188,6 +244,7 @@ class _MainStructureState extends State<MainStructure> {
   @override
   void initState() {
     super.initState();
+    initPlatformState();
     filename = generate_filename();
 
     sort_ID(savedID);
