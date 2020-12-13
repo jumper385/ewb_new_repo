@@ -4,20 +4,29 @@ import 'package:sensors/sensors.dart';
 import 'package:location/location.dart';
 import 'dart:async';
 import 'file_io.dart';
+import 'file_io.dart';
+import 'file_io.dart';
+import 'file_io.dart';
+import 'sensor.dart';
 import 'sensor.dart';
 import 'web.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
+
+var uuid = Uuid();
 
 final accel_delay = Duration(seconds: 3);
 final gps_delay = Duration(seconds: 3);
+final bat_delay = Duration(seconds: 3);
 final thread2_delay = Duration(seconds: 10);
 final thread3_delay = Duration(seconds: 25);
-final thread4_delay = Duration(seconds: 20);
-final String vehicleID = 'vechicle carmen';
+final thread4_delay = Duration(seconds: 30);
+String vehicleID;
 final String upload = "upload";
 final String stagging = "stagging";
 final String compile = "compile";
+final String savedID = "savedID";
 final double distance_threshold = 10.0;
 final String databaseurl = "http://digism.xyz:8081/apiv1";
 
@@ -54,6 +63,16 @@ class _MainStructureState extends State<MainStructure> {
   var latlong;
   String filename;
   bool connected_server = false;
+  int batLevel;
+
+  final myController = TextEditingController();
+
+  @override
+  void dispose() {
+    // Clean up the controller when the widget is disposed.
+    myController.dispose();
+    super.dispose();
+  }
 
   //Main Threads
   Future<void> accelData() async {
@@ -69,6 +88,15 @@ class _MainStructureState extends State<MainStructure> {
         latlong = value;
       });
       write_file(latlong, 'gps', filename, compile, vehicleID);
+    });
+  }
+
+  Future<void> batteryLevel() async {
+    getBattery().then((value) {
+      setState(() {
+        batLevel = value;
+      });
+      write_file([value], 'battery', filename, compile, vehicleID);
     });
   }
 
@@ -118,10 +146,41 @@ class _MainStructureState extends State<MainStructure> {
 
           uploadDir.list(recursive: true, followLinks: false).listen((e) async {
             String name = e.path.split('/').last.split('.')[0];
+            print("uploading");
             upload_delete(databaseurl, name, upload);
           });
         }
       }
+    }
+  }
+
+  Future<void> sort_ID(string) async {
+    try {
+      if (await check_ID(string)) {
+        setState(() async {
+          vehicleID = await read_ID(string);
+        });
+      } else {
+        String id = uuid.v1();
+        setState(() async {
+          vehicleID = id;
+        });
+        save_ID(savedID, id);
+      }
+    } catch (err) {
+      print("Sort problem");
+    }
+  }
+
+  Future<void> changeID(string, id) async {
+    setState(() {
+      vehicleID = id;
+    });
+    if (await check_ID(string)) {
+      delete_ID(string);
+      save_ID(string, id);
+    } else {
+      save_ID(string, id);
     }
   }
 
@@ -130,6 +189,8 @@ class _MainStructureState extends State<MainStructure> {
   void initState() {
     super.initState();
     filename = generate_filename();
+
+    sort_ID(savedID);
 
     accelerometerEvents.listen((event) {
       setState(() {
@@ -145,6 +206,10 @@ class _MainStructureState extends State<MainStructure> {
 
     Timer.periodic(gps_delay, (Timer gpsTimer) {
       gpsData();
+    });
+
+    Timer.periodic(bat_delay, (Timer batTimer) {
+      batteryLevel();
     });
 
     Timer.periodic(thread2_delay, (Timer thread2Timer) {
@@ -178,6 +243,7 @@ class _MainStructureState extends State<MainStructure> {
             Text(connected_server
                 ? '🟢 Connected to Server 😌'
                 : '🟠 Not Connected to Server 😴'),
+            Text(''),
             Align(
               alignment: Alignment.center,
               child: Text(
@@ -223,6 +289,7 @@ class _MainStructureState extends State<MainStructure> {
                     ],
                   ),
                 ),
+                Text(''),
                 Text(
                   "GPS Data",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 32),
@@ -233,6 +300,28 @@ class _MainStructureState extends State<MainStructure> {
                 Text(latlong != null
                     ? "longitude: " + latlong[1].toString()
                     : 'nothing...'),
+                Text(''),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 0),
+                  child: Text(
+                    "Vehicle ID",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 32),
+                  ),
+                ),
+                Text(vehicleID),
+                Text(''),
+                TextField(
+                  controller: myController,
+                ),
+                Text(''),
+                FloatingActionButton.extended(
+                  onPressed: () {
+                    changeID(savedID, myController.text.toString());
+                    myController.clear();
+                  },
+                  label: Text('Change ID'),
+                  backgroundColor: Colors.green,
+                ),
               ],
             )
           ],

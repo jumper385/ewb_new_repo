@@ -55,7 +55,6 @@ Future<void> move_file(filename, folder_from, folder_to) async {
 
 Future<void> delete_file(filename, folder) async {
   try {
-    
     final Directory directory = await getExternalStorageDirectory();
 
     final Directory folder_dir =
@@ -67,7 +66,6 @@ Future<void> delete_file(filename, folder) async {
       await file.delete();
     }
     return;
-
   } catch (err) {
     print(err);
   }
@@ -98,21 +96,17 @@ Future<bool> check_folder_empty(folder) async {
 
 Future<bool> movement_detection(filename, folder, distance_threshold) async {
   final Directory directory = await getExternalStorageDirectory();
-  var file = File('${directory.path}/${folder}/$filename.txt'); 
-  print(file);
-  String data = await file.readAsString(); // read the file's data as one big string
-  print(data);
+  var file = File('${directory.path}/${folder}/$filename.txt');
+  String data =
+      await file.readAsString(); // read the file's data as one big string
   List lines = data.split("||"); // split the big string at ||
   lines.remove(''); // remove the last element in lines cuz it's empty
-  print(lines);
 
   List gpsLines = lines.where((x) {
     return x.split(',').length > 6 ? x.split(',')[4] == ' gps' : false;
   }).toList(); // add only gps data from lines to gpsLines
-  print('selected gps only');
-  print(gpsLines);
 
-  if(gpsLines.length == 0){
+  if (gpsLines.length == 0) {
     return false;
   }
 
@@ -120,20 +114,43 @@ Future<bool> movement_detection(filename, folder, distance_threshold) async {
       .split(","); // split the two values of each line where split by a comma
   double lat1 = double.tryParse(initial[5]); //get latitude
   double lon1 = double.tryParse(initial[6]); //get longitude
-  print('initial value');
 
-  print(gpsLines.length);
   for (int i = 1; i < gpsLines.length; i++) {
     List currentLine = gpsLines[i].split(",");
     double lat2 = double.tryParse(currentLine[5]); //getting second set of data
     double lon2 = double.tryParse(currentLine[6]);
 
     var distanceLength = Geolocator.distanceBetween(lat1, lon1, lat2, lon2);
-    print(distanceLength);
     if (distanceLength >= distance_threshold) {
       return true;
     }
   }
-  print("I reached here");
   return false;
+}
+
+Future<void> save_ID(string, id) async {
+  final Directory directory = await getExternalStorageDirectory();
+  var file = File('${directory.path}/$string.txt');
+  file.create(recursive: true);
+  final sink = file.openWrite();
+  sink.write(id);
+  sink.close();
+}
+
+Future<bool> check_ID(string) async {
+  final Directory directory = await getExternalStorageDirectory();
+  var file = File('${directory.path}/$string.txt');
+  return await file.exists();
+}
+
+Future<void> delete_ID(string) async {
+  final Directory directory = await getExternalStorageDirectory();
+  var file = File('${directory.path}/$string.txt');
+  await file.delete();
+}
+
+Future<String> read_ID(string) async {
+  final Directory directory = await getExternalStorageDirectory();
+  var file = File('${directory.path}/$string.txt');
+  return await file.readAsString();
 }
